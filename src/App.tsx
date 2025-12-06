@@ -249,7 +249,7 @@ function App() {
       </div>
 
       {/* Sidebar Controls */}
-      {imageUrl && (
+      <div className="relative">
         <Controls
           gridSize={gridSize}
           setGridSize={handleGridSizeChange}
@@ -271,7 +271,16 @@ function App() {
           setExportGridSize={setExportGridSize}
           onOpenHelp={() => setShowHelp(true)}
         />
-      )}
+
+        {/* Empty State Overlay */}
+        {!imageUrl && (
+          <div className="absolute inset-0 bg-neutral-900/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center p-6 text-center border-l border-neutral-800">
+            <span className="text-4xl mb-4">👈</span>
+            <p className="text-neutral-300 font-bold text-lg mb-2">Controls Locked</p>
+            <p className="text-neutral-400 text-sm">Upload a battlemap to unlock grid adjustments.</p>
+          </div>
+        )}
+      </div>
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
