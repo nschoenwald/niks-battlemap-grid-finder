@@ -1,7 +1,8 @@
 
 export interface ProcessImageOptions {
     image: HTMLImageElement;
-    currentGridSize: number;
+    currentGridSizeX: number;
+    currentGridSizeY: number;
     offsetX: number;
     offsetY: number;
     targetGridSize: number;
@@ -9,22 +10,25 @@ export interface ProcessImageOptions {
 
 export async function processImage({
     image,
-    currentGridSize,
+    currentGridSizeX,
+    currentGridSizeY,
     offsetX,
     offsetY,
     targetGridSize,
 }: ProcessImageOptions): Promise<string> {
-    // 1. Calculate Scale
-    const scale = targetGridSize / currentGridSize;
-    const scaledWidth = image.naturalWidth * scale;
-    const scaledHeight = image.naturalHeight * scale;
+    // 1. Calculate Scale (Non-uniform)
+    const scaleX = targetGridSize / currentGridSizeX;
+    const scaleY = targetGridSize / currentGridSizeY;
+
+    const scaledWidth = image.naturalWidth * scaleX;
+    const scaledHeight = image.naturalHeight * scaleY;
 
     // 2. Calculate Padding
     // We want the grid intersection (offsetX * scale, offsetY * scale) to land on a multiple of targetGridSize.
     // scaledOffset moves the same way.
 
-    const scaledOffsetX = offsetX * scale;
-    const scaledOffsetY = offsetY * scale;
+    const scaledOffsetX = offsetX * scaleX;
+    const scaledOffsetY = offsetY * scaleY;
 
     // Calculate how far we are from the next grid line to the left/top (or previous)
     // intersection is at scaledOffsetX. current grid line is at scaledOffsetX.

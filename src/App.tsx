@@ -16,15 +16,18 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
 
   // Grid State
-  const [gridSize, setGridSize] = useState(50);
+  // Grid State
+  const [gridSizeX, setGridSizeX] = useState(50);
+  const [gridSizeY, setGridSizeY] = useState(50);
+  const [isAspectLocked, setIsAspectLocked] = useState(true);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
 
   // Refs for Event Listeners to avoid stale closures
-  const stateRef = useRef({ gridSize, offsetX, offsetY });
+  const stateRef = useRef({ gridSizeX, gridSizeY, offsetX, offsetY });
   useEffect(() => {
-    stateRef.current = { gridSize, offsetX, offsetY };
-  }, [gridSize, offsetX, offsetY]);
+    stateRef.current = { gridSizeX, gridSizeY, offsetX, offsetY };
+  }, [gridSizeX, gridSizeY, offsetX, offsetY]);
 
   // Visual Aids State
   const [gridColor, setGridColor] = useState('#ff0000');
@@ -39,24 +42,60 @@ function App() {
   const [exportGridSize, setExportGridSize] = useState(100);
 
   // Proportional Scaling Handler
-  const handleGridSizeChange = (newSize: number) => {
+  const handleGridSizeChange = (newSize: number, axis: 'x' | 'y' = 'x') => {
     if (newSize < 1) return;
-    const oldSize = gridSize;
-    const ratio = newSize / oldSize;
 
-    setGridSize(newSize);
-    setOffsetX(Math.round(offsetX * ratio));
-    setOffsetY(Math.round(offsetY * ratio));
+    if (isAspectLocked) {
+      // Find ratio based on whichever axis triggered the change? 
+      // Or simpler: just sync them if locked.
+      // Wait, if Aspect is locked, it implies "maintain square" OR "maintain current ratio"?
+      // Usually grid tools mean "maintain square". Let's assume Square Lock for now.
+      // Actually "Link" icon usually means "maintain ratio", but default is Square.
+
+      // Let's implement strict Square Lock if enabled for simplicity first, or ratio if different?
+      // User asked for "skewed grids", so they might want 50x60.
+      // If they lock, should it become 100x120? Yes.
+
+      const oldSizeX = gridSizeX;
+      const oldSizeY = gridSizeY;
+
+      if (axis === 'x') {
+        const ratio = newSize / oldSizeX;
+        setGridSizeX(newSize);
+        setGridSizeY(Math.round(oldSizeY * ratio));
+        setOffsetX(Math.round(offsetX * ratio));
+        setOffsetY(Math.round(offsetY * ratio));
+      } else {
+        const ratio = newSize / oldSizeY;
+        setGridSizeY(newSize);
+        setGridSizeX(Math.round(oldSizeX * ratio));
+        setOffsetX(Math.round(offsetX * ratio));
+        setOffsetY(Math.round(offsetY * ratio));
+      }
+    } else {
+      // Unlock mode: Change only one axis. 
+      // Only scale offset matching axis?
+      if (axis === 'x') {
+        const ratio = newSize / gridSizeX;
+        setGridSizeX(newSize);
+        setOffsetX(Math.round(offsetX * ratio));
+      } else {
+        const ratio = newSize / gridSizeY;
+        setGridSizeY(newSize);
+        setOffsetY(Math.round(offsetY * ratio));
+      }
+    }
   };
 
-  // Keyboard Nudging
+  // Keyboard Nudging (Affects Both Symmetrically or just active?)
+  // For simplicity, keyboard +/- affects X and ratio-scales Y.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!imageUrl) return;
       // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      const { gridSize: currentSize, offsetX: currentX, offsetY: currentY } = stateRef.current;
+      const { gridSizeX: currentXVal, gridSizeY: currentYVal, offsetX: currentX, offsetY: currentY } = stateRef.current;
       const shift = e.shiftKey ? 10 : 1;
 
       switch (e.key) {
@@ -74,18 +113,20 @@ function App() {
           break;
         case '=':
         case '+': {
-          const newSize = currentSize + 1;
-          const ratio = newSize / currentSize;
-          setGridSize(newSize);
+          const newSizeX = currentXVal + 1;
+          const ratio = newSizeX / currentXVal;
+          setGridSizeX(newSizeX);
+          setGridSizeY(Math.round(currentYVal * ratio));
           setOffsetX(Math.round(currentX * ratio));
           setOffsetY(Math.round(currentY * ratio));
           break;
         }
         case '-': {
-          if (currentSize <= 10) return;
-          const newSize = currentSize - 1;
-          const ratio = newSize / currentSize;
-          setGridSize(newSize);
+          if (currentXVal <= 1) return;
+          const newSizeX = currentXVal - 1;
+          const ratio = newSizeX / currentXVal;
+          setGridSizeX(newSizeX);
+          setGridSizeY(Math.round(currentYVal * ratio));
           setOffsetX(Math.round(currentX * ratio));
           setOffsetY(Math.round(currentY * ratio));
           break;
@@ -104,12 +145,15 @@ function App() {
     // Reset grid on new image
     setOffsetX(0);
     setOffsetY(0);
-    setGridSize(50);
+    setGridSizeX(50);
+    setGridSizeY(50);
     setZoom(1);
+    setIsAspectLocked(true);
   };
 
   const handleReset = () => {
-    setGridSize(50);
+    setGridSizeX(50);
+    setGridSizeY(50);
     setOffsetX(0);
     setOffsetY(0);
   };
@@ -136,10 +180,18 @@ function App() {
       await new Promise(r => setTimeout(r, 50));
 
       const result = await detectGrid(img, method);
-      if (result && result.gridSize > 0) {
-        setGridSize(result.gridSize);
-        setOffsetX(result.offsetX % result.gridSize);
-        setOffsetY(result.offsetY % result.gridSize);
+      if (result && result.gridSizeX > 0 && result.gridSizeY > 0) {
+        setGridSizeX(result.gridSizeX);
+        setGridSizeY(result.gridSizeY);
+        setOffsetX(result.offsetX % result.gridSizeX);
+        setOffsetY(result.offsetY % result.gridSizeY);
+
+        // Auto-disable aspect lock if detected grid is very non-square?
+        if (Math.abs(result.gridSizeX - result.gridSizeY) > 1) {
+          setIsAspectLocked(false);
+        } else {
+          setIsAspectLocked(true);
+        }
       } else {
         console.warn("Could not automatically detect grid.");
       }
@@ -162,7 +214,8 @@ function App() {
 
       const dataUrl = await processImage({
         image: img,
-        currentGridSize: gridSize,
+        currentGridSizeX: gridSizeX,
+        currentGridSizeY: gridSizeY,
         offsetX,
         offsetY,
         targetGridSize: exportGridSize
@@ -191,22 +244,24 @@ function App() {
     setMeasureEnd(null);
 
     const width = Math.abs(end.x - start.x);
-    // const height = Math.abs(end.y - start.y);
-
-    if (width < 10) return; // Ignore small drags
+    const height = Math.abs(end.y - start.y);
 
     // Fixed 3x3 Logic
     const count = 3;
 
-    const newGridSize = width / count;
+    const newGridSizeX = width / count;
+    const newGridSizeY = height / count;
 
-    // Calculate Offset
-    const left = Math.min(start.x, end.x);
-    const top = Math.min(start.y, end.y);
+    setGridSizeX(Math.round(newGridSizeX));
+    setGridSizeY(Math.round(newGridSizeY));
 
-    setGridSize(Math.round(newGridSize));
-    setOffsetX(Math.round(left % newGridSize));
-    setOffsetY(Math.round(top % newGridSize));
+    // Auto-unlock aspect ratio if significantly different
+    if (Math.abs(newGridSizeX - newGridSizeY) > 1) {
+      setIsAspectLocked(false);
+    }
+
+    setOffsetX(Math.round(start.x % newGridSizeX));
+    setOffsetY(Math.round(start.y % newGridSizeY));
   };
 
   return (
@@ -266,7 +321,8 @@ function App() {
 
               <MapCanvas
                 imageUrl={imageUrl}
-                gridSize={gridSize}
+                gridSizeX={gridSizeX}
+                gridSizeY={gridSizeY}
                 offsetX={offsetX}
                 offsetY={offsetY}
                 gridColor={gridColor}
@@ -287,8 +343,11 @@ function App() {
       {/* Sidebar Controls */}
       <div className="relative">
         <Controls
-          gridSize={gridSize}
+          gridSizeX={gridSizeX}
+          gridSizeY={gridSizeY}
           setGridSize={handleGridSizeChange}
+          isAspectLocked={isAspectLocked}
+          setIsAspectLocked={setIsAspectLocked}
           offsetX={offsetX}
           setOffsetX={setOffsetX}
           offsetY={offsetY}

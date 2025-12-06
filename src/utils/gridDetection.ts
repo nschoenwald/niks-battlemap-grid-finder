@@ -1,5 +1,6 @@
 export interface GridDetectionResult {
-    gridSize: number;
+    gridSizeX: number;
+    gridSizeY: number;
     offsetX: number;
     offsetY: number;
     confidence: number;
@@ -55,7 +56,8 @@ export async function detectGrid(image: HTMLImageElement, method: DetectionMetho
 
     return {
         ...result,
-        gridSize: Math.round(result.gridSize * scaleFactor),
+        gridSizeX: Math.round(result.gridSizeX * scaleFactor),
+        gridSizeY: Math.round(result.gridSizeY * scaleFactor),
         offsetX: Math.round(result.offsetX * scaleFactor),
         offsetY: Math.round(result.offsetY * scaleFactor),
     };
@@ -164,17 +166,15 @@ function detectGridProjection(imageData: ImageData, width: number, height: numbe
     const xRes = findDominantPeriod(colSums);
     const yRes = findDominantPeriod(rowSums);
 
-    let size = 0;
-    if (xRes.period > 0 && yRes.period > 0 && Math.abs(xRes.period - yRes.period) < 5) {
-        size = (xRes.period + yRes.period) / 2;
-    } else {
-        size = xRes.confidence > yRes.confidence ? xRes.period : yRes.period;
-    }
+    if (xRes.period === 0 && yRes.period === 0) return null;
 
-    if (size === 0) return null;
+    // Use found periods directly, fall back to the other one if zero (rare)
+    const sizeX = xRes.period > 0 ? xRes.period : yRes.period;
+    const sizeY = yRes.period > 0 ? yRes.period : xRes.period;
 
     return {
-        gridSize: size,
+        gridSizeX: sizeX,
+        gridSizeY: sizeY,
         offsetX: xRes.offset,
         offsetY: yRes.offset,
         confidence: (xRes.confidence + yRes.confidence) / 2
@@ -283,24 +283,16 @@ function detectGridAutocorrelation(imageData: ImageData, width: number, height: 
     const xRes = autocorrelate(colEnergy);
     const yRes = autocorrelate(rowEnergy);
 
-    // Normalize confidence for comparison with projection method (roughly 0-1)
-    // This is hard without real normalization.
-    // Let's bias slightly lower as fallback.
+    if (xRes.period === 0 && yRes.period === 0) return null;
 
-
-    let size = 0;
-    if (Math.abs(xRes.period - yRes.period) < 5) {
-        size = (xRes.period + yRes.period) / 2;
-    } else {
-        size = xRes.confidence > yRes.confidence ? xRes.period : yRes.period;
-    }
-
-    if (size === 0) return null;
+    const sizeX = xRes.period > 0 ? xRes.period : yRes.period;
+    const sizeY = yRes.period > 0 ? yRes.period : xRes.period;
 
     return {
-        gridSize: size,
+        gridSizeX: sizeX,
+        gridSizeY: sizeY,
         offsetX: xRes.offset,
         offsetY: yRes.offset,
-        confidence: 0.8 // Dummy confidence for now, hard to calibrate against projection
+        confidence: 0.8
     };
 }

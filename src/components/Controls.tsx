@@ -1,12 +1,15 @@
 
+export interface ControlsProps {
+    gridSizeX: number;
+    gridSizeY: number;
+    setGridSize: (newSize: number, axis?: 'x' | 'y') => void;
+    isAspectLocked: boolean;
+    setIsAspectLocked: (locked: boolean) => void;
 
-interface ControlsProps {
-    gridSize: number;
-    setGridSize: (size: number) => void;
     offsetX: number;
-    setOffsetX: (offset: number) => void;
+    setOffsetX: (x: number) => void;
     offsetY: number;
-    setOffsetY: (offset: number) => void;
+    setOffsetY: (y: number) => void;
     onReset: () => void;
     onExport: () => void;
     isProcessing: boolean;
@@ -24,12 +27,8 @@ interface ControlsProps {
 }
 
 export function Controls({
-    gridSize,
-    setGridSize,
-    offsetX,
-    setOffsetX,
-    offsetY,
-    setOffsetY,
+    gridSizeX, gridSizeY, setGridSize, isAspectLocked, setIsAspectLocked,
+    offsetX, setOffsetX, offsetY, setOffsetY,
     onReset,
     onExport,
     isProcessing,
@@ -98,26 +97,7 @@ export function Controls({
                 </button>
             </div>
 
-            <div className="flex flex-col gap-2">
-                <label className="text-sm text-neutral-400">Grid Size (px)</label>
-                <div className="flex gap-2">
-                    <input
-                        type="range"
-                        min="10"
-                        max="200"
-                        value={gridSize}
-                        onChange={(e) => setGridSize(Number(e.target.value))}
-                        className="flex-1 accent-indigo-500"
-                    />
-                    <input
-                        type="number"
-                        value={gridSize}
-                        onChange={(e) => setGridSize(Number(e.target.value))}
-                        className="w-16 bg-neutral-700 border border-neutral-600 rounded px-2 py-1 text-white text-right"
-                    />
-                </div>
 
-            </div>
 
             <div className="flex flex-col gap-2">
                 <label className="text-sm text-neutral-400">Visual Aids</label>
@@ -150,8 +130,8 @@ export function Controls({
                     <input
                         type="range"
                         min="0"
-                        max={gridSize}
-                        value={offsetX % gridSize}
+                        max={gridSizeX}
+                        value={offsetX % gridSizeX}
                         onChange={(e) => setOffsetX(Number(e.target.value))}
                         className="flex-1 accent-indigo-500"
                     />
@@ -170,8 +150,8 @@ export function Controls({
                     <input
                         type="range"
                         min="0"
-                        max={gridSize}
-                        value={offsetY % gridSize}
+                        max={gridSizeY}
+                        value={offsetY % gridSizeY}
                         onChange={(e) => setOffsetY(Number(e.target.value))}
                         className="flex-1 accent-indigo-500"
                     />
@@ -185,6 +165,40 @@ export function Controls({
             </div>
 
             <div className="mt-auto flex flex-col gap-2">
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-neutral-400 uppercase">Grid Dimensions (px)</label>
+                        <button
+                            onClick={() => setIsAspectLocked(!isAspectLocked)}
+                            title={isAspectLocked ? "Unlock Aspect Ratio" : "Lock Aspect Ratio"}
+                            className={`p-1 rounded ${isAspectLocked ? 'text-indigo-400 bg-indigo-900/30' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            {isAspectLocked ? '🔒 Linked' : '🔓 Unlinked'}
+                        </button>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <label className="text-[10px] text-neutral-500 uppercase block mb-1">Width</label>
+                            <input
+                                type="number"
+                                value={gridSizeX}
+                                onChange={(e) => setGridSize(parseInt(e.target.value) || 0, 'x')}
+                                className="w-full bg-neutral-800 border-neutral-700 text-neutral-200 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="text-[10px] text-neutral-500 uppercase block mb-1">Height</label>
+                            <input
+                                type="number"
+                                value={gridSizeY}
+                                onChange={(e) => setGridSize(parseInt(e.target.value) || 0, 'y')}
+                                className="w-full bg-neutral-800 border-neutral-700 text-neutral-200 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex flex-col gap-1 mb-2">
                     <label className="text-sm text-neutral-400">Target Grid Size (px)</label>
                     <input

@@ -2,7 +2,8 @@ import { useRef, useEffect, useState } from 'react';
 
 interface MapCanvasProps {
     imageUrl: string;
-    gridSize: number;
+    gridSizeX: number;
+    gridSizeY: number;
     offsetX: number;
     offsetY: number;
     gridColor: string;
@@ -17,7 +18,7 @@ interface MapCanvasProps {
 }
 
 export function MapCanvas({
-    imageUrl, gridSize, offsetX, offsetY, gridColor, isGridVisible,
+    imageUrl, gridSizeX, gridSizeY, offsetX, offsetY, gridColor, isGridVisible,
     isMeasuring, measureStart, setMeasureStart, measureEnd, setMeasureEnd, onMeasureComplete,
     scale
 }: MapCanvasProps) {
@@ -49,11 +50,11 @@ export function MapCanvas({
             ctx.lineWidth = 1;
             ctx.beginPath();
 
-            for (let x = offsetX; x < canvas.width; x += gridSize) {
+            for (let x = offsetX; x < canvas.width; x += gridSizeX) {
                 ctx.moveTo(x + 0.5, 0);
                 ctx.lineTo(x + 0.5, canvas.height);
             }
-            for (let y = offsetY; y < canvas.height; y += gridSize) {
+            for (let y = offsetY; y < canvas.height; y += gridSizeY) {
                 ctx.moveTo(0, y + 0.5);
                 ctx.lineTo(canvas.width, y + 0.5);
             }
@@ -103,7 +104,7 @@ export function MapCanvas({
             ctx.strokeRect(x, y, w, h);
         }
 
-    }, [imageUrl, gridSize, offsetX, offsetY, gridColor, isGridVisible, isMeasuring, measureStart, measureEnd]);
+    }, [imageUrl, gridSizeX, gridSizeY, offsetX, offsetY, gridColor, isGridVisible, isMeasuring, measureStart, measureEnd]);
 
     // Mouse Handlers
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -179,10 +180,10 @@ export function MapCanvas({
             ctx.beginPath();
             // Vertical lines
             // Find first grid line to the left of the view
-            const startX = Math.floor(sX / gridSize) * gridSize;
+            const startX = Math.floor(sX / gridSizeX) * gridSizeX;
             const endX = sX + sW;
 
-            for (let gx = startX; gx < endX + gridSize; gx += gridSize) {
+            for (let gx = startX; gx < endX + gridSizeX; gx += gridSizeX) {
                 // World x = gx. 
                 // Magnifier x = (gx - sX) * zoom
                 const drawX = (gx - sX) * zoom;
@@ -191,10 +192,10 @@ export function MapCanvas({
             }
 
             // Horizontal lines
-            const startY = Math.floor(sY / gridSize) * gridSize;
+            const startY = Math.floor(sY / gridSizeY) * gridSizeY;
             const endY = sY + sH;
 
-            for (let gy = startY; gy < endY + gridSize; gy += gridSize) {
+            for (let gy = startY; gy < endY + gridSizeY; gy += gridSizeY) {
                 const drawY = (gy - sY) * zoom;
                 ctx.moveTo(0, drawY + 0.5);
                 ctx.lineTo(size, drawY + 0.5);
@@ -262,7 +263,7 @@ export function MapCanvas({
 
         ctx.restore();
 
-    }, [magnifierPos, imageUrl, gridSize, offsetX, offsetY, isGridVisible, gridColor]);
+    }, [magnifierPos, imageUrl, gridSizeX, gridSizeY, offsetX, offsetY, isGridVisible, gridColor]);
 
 
     // Update mouse move to track position for magnifier
