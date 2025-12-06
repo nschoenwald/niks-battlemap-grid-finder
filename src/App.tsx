@@ -216,6 +216,34 @@ function App() {
       <div className="flex-1 flex flex-col relative min-w-0">
         <header className="h-14 border-b border-neutral-800 flex items-center px-6 bg-neutral-900 z-10">
           <h1 className="text-lg font-bold tracking-brand">Nik's Battlemap Grid finder</h1>
+
+          {/* Centered Zoom Controls */}
+          {imageUrl && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+              <button
+                onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}
+                className="w-8 h-8 flex items-center justify-center rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition-colors border border-neutral-700"
+              >
+                -
+              </button>
+              <span className="text-sm font-mono w-12 text-center text-neutral-300">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                onClick={() => setZoom(Math.min(5, zoom + 0.1))}
+                className="w-8 h-8 flex items-center justify-center rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition-colors border border-neutral-700"
+              >
+                +
+              </button>
+              <button
+                onClick={() => setZoom(1)}
+                className="ml-1 px-2 py-1 text-xs bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-neutral-400 hover:text-white transition-colors uppercase tracking-wider font-bold"
+              >
+                Reset
+              </button>
+            </div>
+          )}
+
           <div className="ml-auto">
             {imageFile && (
               <button
@@ -234,29 +262,7 @@ function App() {
           ) : (
             <>
               {/* Top-Center Zoom Controls */}
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-neutral-800/90 backdrop-blur rounded-full px-4 py-2 border border-neutral-700 shadow-xl z-20">
-                <button
-                  onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 text-neutral-200 transition-colors"
-                >
-                  -
-                </button>
-                <span className="text-sm font-mono w-16 text-center text-neutral-300">
-                  {Math.round(zoom * 100)}%
-                </span>
-                <button
-                  onClick={() => setZoom(Math.min(5, zoom + 0.1))}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 text-neutral-200 transition-colors"
-                >
-                  +
-                </button>
-                <button
-                  onClick={() => setZoom(1)}
-                  className="ml-2 text-xs text-neutral-500 hover:text-neutral-300 uppercase tracking-wider font-bold"
-                >
-                  Reset
-                </button>
-              </div>
+
 
               <MapCanvas
                 imageUrl={imageUrl}
