@@ -17,6 +17,8 @@ interface ControlsProps {
     setIsGridVisible: (visible: boolean) => void;
     isMeasuring: boolean;
     setIsMeasuring: (measuring: boolean) => void;
+    exportGridSize: number;
+    setExportGridSize: (size: number) => void;
 }
 
 export function Controls({
@@ -35,7 +37,9 @@ export function Controls({
     isGridVisible,
     setIsGridVisible,
     isMeasuring,
-    setIsMeasuring
+    setIsMeasuring,
+    exportGridSize,
+    setExportGridSize
 }: ControlsProps) {
     return (
         <div className="w-80 flex-shrink-0 bg-neutral-800 p-6 flex flex-col gap-6 border-l border-neutral-700 shadow-2xl z-10">
@@ -141,6 +145,16 @@ export function Controls({
             </div>
 
             <div className="mt-auto flex flex-col gap-2">
+                <div className="flex flex-col gap-1 mb-2">
+                    <label className="text-sm text-neutral-400">Target Grid Size (px)</label>
+                    <input
+                        type="number"
+                        value={exportGridSize}
+                        onChange={(e) => setExportGridSize(Number(e.target.value))}
+                        className="bg-neutral-700 border border-neutral-600 rounded px-2 py-1 text-white"
+                    />
+                </div>
+
                 <button
                     onClick={onExport}
                     disabled={isProcessing}

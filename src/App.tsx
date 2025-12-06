@@ -26,6 +26,7 @@ function App() {
   const [measureEnd, setMeasureEnd] = useState<{ x: number, y: number } | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [exportGridSize, setExportGridSize] = useState(100);
 
   // Keyboard Nudging
   useEffect(() => {
@@ -118,7 +119,7 @@ function App() {
         currentGridSize: gridSize,
         offsetX,
         offsetY,
-        targetGridSize: 100
+        targetGridSize: exportGridSize
       });
 
       // Trigger Download
@@ -228,6 +229,8 @@ function App() {
           setGridColor={setGridColor}
           isGridVisible={isGridVisible}
           setIsGridVisible={setIsGridVisible}
+          exportGridSize={exportGridSize}
+          setExportGridSize={setExportGridSize}
         />
       )}
     </div>
