@@ -11,6 +11,7 @@ import { detectGrid } from './utils/gridDetection';
 function App() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
 
   const [showHelp, setShowHelp] = useState(false);
 
@@ -104,6 +105,7 @@ function App() {
     setOffsetX(0);
     setOffsetY(0);
     setGridSize(50);
+    setZoom(1);
   };
 
   const handleReset = () => {
@@ -213,7 +215,7 @@ function App() {
       {/* Main Canvas Area */}
       <div className="flex-1 flex flex-col relative min-w-0">
         <header className="h-14 border-b border-neutral-800 flex items-center px-6 bg-neutral-900 z-10">
-          <h1 className="text-lg font-bold tracking-brand">Battlemap Resizer</h1>
+          <h1 className="text-lg font-bold tracking-brand">Nik's Battlemap Grid finder</h1>
           <div className="ml-auto">
             {imageFile && (
               <button
@@ -226,24 +228,52 @@ function App() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-hidden flex items-center justify-center p-8 bg-neutral-950">
+        <main className="flex-1 overflow-hidden flex items-center justify-center p-8 bg-neutral-950 relative">
           {!imageUrl ? (
             <ImageUploader onImageUpload={handleImageUpload} />
           ) : (
-            <MapCanvas
-              imageUrl={imageUrl}
-              gridSize={gridSize}
-              offsetX={offsetX}
-              offsetY={offsetY}
-              gridColor={gridColor}
-              isGridVisible={isGridVisible}
-              isMeasuring={isMeasuring}
-              measureStart={measureStart}
-              setMeasureStart={setMeasureStart}
-              measureEnd={measureEnd}
-              setMeasureEnd={setMeasureEnd}
-              onMeasureComplete={handleMeasureComplete}
-            />
+            <>
+              {/* Top-Center Zoom Controls */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-neutral-800/90 backdrop-blur rounded-full px-4 py-2 border border-neutral-700 shadow-xl z-20">
+                <button
+                  onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 text-neutral-200 transition-colors"
+                >
+                  -
+                </button>
+                <span className="text-sm font-mono w-16 text-center text-neutral-300">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button
+                  onClick={() => setZoom(Math.min(5, zoom + 0.1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-700 hover:bg-neutral-600 text-neutral-200 transition-colors"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => setZoom(1)}
+                  className="ml-2 text-xs text-neutral-500 hover:text-neutral-300 uppercase tracking-wider font-bold"
+                >
+                  Reset
+                </button>
+              </div>
+
+              <MapCanvas
+                imageUrl={imageUrl}
+                gridSize={gridSize}
+                offsetX={offsetX}
+                offsetY={offsetY}
+                gridColor={gridColor}
+                isGridVisible={isGridVisible}
+                isMeasuring={isMeasuring}
+                measureStart={measureStart}
+                setMeasureStart={setMeasureStart}
+                measureEnd={measureEnd}
+                setMeasureEnd={setMeasureEnd}
+                onMeasureComplete={handleMeasureComplete}
+                scale={zoom}
+              />
+            </>
           )}
         </main>
       </div>

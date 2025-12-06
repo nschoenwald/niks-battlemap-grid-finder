@@ -21,7 +21,7 @@ export function HelpModal({ onClose }: HelpModalProps) {
                 onClick={e => e.stopPropagation()} // Prevent closing when clicking inside
             >
                 <div className="flex items-center justify-between p-6 border-b border-neutral-700 bg-neutral-900/50">
-                    <h2 className="text-xl font-bold text-white">How to use Battlemap Resizer</h2>
+                    <h2 className="text-xl font-bold text-white">How to use Nik's Battlemap Grid finder</h2>
                     <button
                         onClick={onClose}
                         className="text-neutral-400 hover:text-white transition-colors"

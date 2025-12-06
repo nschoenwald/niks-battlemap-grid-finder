@@ -13,11 +13,13 @@ interface MapCanvasProps {
     measureEnd?: { x: number, y: number } | null;
     setMeasureEnd?: (pt: { x: number, y: number } | null) => void;
     onMeasureComplete?: (start: { x: number, y: number }, end: { x: number, y: number }) => void;
+    scale: number;
 }
 
 export function MapCanvas({
     imageUrl, gridSize, offsetX, offsetY, gridColor, isGridVisible,
-    isMeasuring, measureStart, setMeasureStart, measureEnd, setMeasureEnd, onMeasureComplete
+    isMeasuring, measureStart, setMeasureStart, measureEnd, setMeasureEnd, onMeasureComplete,
+    scale
 }: MapCanvasProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -321,20 +323,27 @@ export function MapCanvas({
             // Add styles to prevent selection
             style={{ maxHeight: '80vh', maxWidth: '100%', userSelect: 'none', WebkitUserSelect: 'none' }}
         >
-            <div className="relative inline-block">
+            <div
+                className="relative inline-block"
+                style={{
+                    width: imageRef.current ? imageRef.current.naturalWidth * scale : 'auto',
+                    height: imageRef.current ? imageRef.current.naturalHeight * scale : 'auto'
+                }}
+            >
                 <img
                     ref={imageRef}
                     src={imageUrl}
                     alt="Battlemap"
-                    className="block max-w-none select-none"
+                    className="block max-w-none select-none origin-top-left"
+                    style={{ transform: `scale(${scale})` }}
                     draggable={false}
                     onDragStart={(e) => e.preventDefault()}
                     onLoad={handleImageLoad}
                 />
                 <canvas
                     ref={canvasRef}
-                    className="absolute inset-0 pointer-events-none"
-                    style={{ width: '100%', height: '100%' }}
+                    className="absolute inset-0 pointer-events-none origin-top-left"
+                    style={{ width: '100%', height: '100%', transform: `scale(${scale})` }}
                 />
                 {/* Magnifier Canvas */}
                 {magnifierPos && (
