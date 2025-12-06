@@ -214,7 +214,7 @@ function App() {
 
       {/* Main Canvas Area */}
       <div className="flex-1 flex flex-col relative min-w-0">
-        <header className="h-14 border-b border-neutral-800 flex items-center px-6 bg-neutral-900 z-10">
+        <header className="relative h-14 border-b border-neutral-800 flex items-center px-6 bg-neutral-900 z-10">
           <h1 className="text-lg font-bold tracking-brand">Nik's Battlemap Grid finder</h1>
 
           {/* Centered Zoom Controls */}
