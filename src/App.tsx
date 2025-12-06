@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ImageUploader } from './components/ImageUploader';
 import { MapCanvas } from './components/MapCanvas';
 import { Controls } from './components/Controls';
@@ -19,6 +19,12 @@ function App() {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
 
+  // Refs for Event Listeners to avoid stale closures
+  const stateRef = useRef({ gridSize, offsetX, offsetY });
+  useEffect(() => {
+    stateRef.current = { gridSize, offsetX, offsetY };
+  }, [gridSize, offsetX, offsetY]);
+
   // Visual Aids State
   const [gridColor, setGridColor] = useState('#ff0000');
   const [isGridVisible, setIsGridVisible] = useState(true);
@@ -31,6 +37,17 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [exportGridSize, setExportGridSize] = useState(100);
 
+  // Proportional Scaling Handler
+  const handleGridSizeChange = (newSize: number) => {
+    if (newSize < 1) return;
+    const oldSize = gridSize;
+    const ratio = newSize / oldSize;
+
+    setGridSize(newSize);
+    setOffsetX(Math.round(offsetX * ratio));
+    setOffsetY(Math.round(offsetY * ratio));
+  };
+
   // Keyboard Nudging
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -38,28 +55,40 @@ function App() {
       // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
+      const { gridSize: currentSize, offsetX: currentX, offsetY: currentY } = stateRef.current;
       const shift = e.shiftKey ? 10 : 1;
 
       switch (e.key) {
         case 'ArrowLeft':
-          setOffsetX(prev => prev - shift);
+          setOffsetX(currentX - shift);
           break;
         case 'ArrowRight':
-          setOffsetX(prev => prev + shift);
+          setOffsetX(currentX + shift);
           break;
         case 'ArrowUp':
-          setOffsetY(prev => prev - shift);
+          setOffsetY(currentY - shift);
           break;
         case 'ArrowDown':
-          setOffsetY(prev => prev + shift);
+          setOffsetY(currentY + shift);
           break;
         case '=':
-        case '+':
-          setGridSize(prev => prev + 1);
+        case '+': {
+          const newSize = currentSize + 1;
+          const ratio = newSize / currentSize;
+          setGridSize(newSize);
+          setOffsetX(Math.round(currentX * ratio));
+          setOffsetY(Math.round(currentY * ratio));
           break;
-        case '-':
-          setGridSize(prev => Math.max(10, prev - 1));
+        }
+        case '-': {
+          if (currentSize <= 10) return;
+          const newSize = currentSize - 1;
+          const ratio = newSize / currentSize;
+          setGridSize(newSize);
+          setOffsetX(Math.round(currentX * ratio));
+          setOffsetY(Math.round(currentY * ratio));
           break;
+        }
       }
     };
 
@@ -71,9 +100,10 @@ function App() {
     setImageFile(file);
     const url = URL.createObjectURL(file);
     setImageUrl(url);
-    // Reset grid on new image? Maybe keep it? Let's reset for now.
+    // Reset grid on new image
     setOffsetX(0);
     setOffsetY(0);
+    setGridSize(50);
   };
 
   const handleReset = () => {
@@ -221,7 +251,7 @@ function App() {
       {imageUrl && (
         <Controls
           gridSize={gridSize}
-          setGridSize={setGridSize}
+          setGridSize={handleGridSizeChange}
           offsetX={offsetX}
           setOffsetX={setOffsetX}
           offsetY={offsetY}

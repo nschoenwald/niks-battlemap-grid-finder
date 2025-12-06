@@ -37,7 +37,10 @@ export function MapCanvas({
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // 1. Draw Grid
-        if (isGridVisible) {
+        // Hide grid if we are actively dragging a measurement (user request)
+        const isDragging = isMeasuring && measureStart && measureEnd;
+
+        if (isGridVisible && !isDragging) {
             ctx.strokeStyle = gridColor;
             ctx.lineWidth = 1;
             ctx.beginPath();
