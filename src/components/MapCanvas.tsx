@@ -63,11 +63,14 @@ export function MapCanvas({
             const w = Math.abs(measureEnd.x - measureStart.x);
             const h = Math.abs(measureEnd.y - measureStart.y);
 
-            ctx.strokeRect(x, y, w, h);
+            // 1. Fill (Background)
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+            ctx.fillRect(x, y, w, h);
 
-            // Draw 3x3 internal lines
-            ctx.beginPath();
+            // 2. Internal 3x3 Grid
+            ctx.strokeStyle = '#00ff00';
             ctx.lineWidth = 1;
+            ctx.beginPath();
             // Verticals
             ctx.moveTo(x + w / 3, y);
             ctx.lineTo(x + w / 3, y + h);
@@ -80,8 +83,9 @@ export function MapCanvas({
             ctx.lineTo(x + w, y + (2 * h) / 3);
             ctx.stroke();
 
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
-            ctx.fillRect(x, y, w, h);
+            // 3. Box Border (on top)
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, w, h);
         }
 
     }, [imageUrl, gridSize, offsetX, offsetY, gridColor, isGridVisible, isMeasuring, measureStart, measureEnd]);
