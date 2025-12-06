@@ -108,11 +108,10 @@ export function MapCanvas({
         if (!isMeasuring || !setMeasureStart || !imageRef.current) return;
 
         const rect = imageRef.current.getBoundingClientRect();
-        const scaleX = imageRef.current.width / rect.width;
-        const scaleY = imageRef.current.height / rect.height;
 
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        // Use explicit scale prop for coordinate conversion
+        const x = (e.clientX - rect.left) / scale;
+        const y = (e.clientY - rect.top) / scale;
 
         setMeasureStart({ x, y });
         setMeasureEnd?.({ x, y });
@@ -121,6 +120,9 @@ export function MapCanvas({
     // Magnifier Logic
     const [magnifierPos, setMagnifierPos] = useState<{ x: number, y: number } | null>(null);
     const magnifierRef = useRef<HTMLCanvasElement>(null);
+
+    // Track Image Dimensions for Wrapper
+    const [imgDimensions, setImgDimensions] = useState<{ w: number, h: number } | null>(null);
 
     useEffect(() => {
         if (!magnifierPos || !magnifierRef.current || !imageRef.current) return;
@@ -266,11 +268,9 @@ export function MapCanvas({
         if (!imageRef.current) return;
 
         const rect = imageRef.current.getBoundingClientRect();
-        const scaleX = imageRef.current.width / rect.width;
-        const scaleY = imageRef.current.height / rect.height;
 
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        const x = (e.clientX - rect.left) / scale;
+        const y = (e.clientY - rect.top) / scale;
 
         // Update Measuring End
         if (isMeasuring && measureStart && setMeasureEnd) {
@@ -302,6 +302,7 @@ export function MapCanvas({
         if (canvas && img) {
             canvas.width = img.width;
             canvas.height = img.height;
+            setImgDimensions({ w: img.naturalWidth, h: img.naturalHeight });
         }
     };
 
@@ -326,8 +327,8 @@ export function MapCanvas({
             <div
                 className="relative inline-block"
                 style={{
-                    width: imageRef.current ? imageRef.current.naturalWidth * scale : 'auto',
-                    height: imageRef.current ? imageRef.current.naturalHeight * scale : 'auto'
+                    width: imgDimensions ? imgDimensions.w * scale : 'auto',
+                    height: imgDimensions ? imgDimensions.h * scale : 'auto'
                 }}
             >
                 <img
@@ -351,8 +352,8 @@ export function MapCanvas({
                         ref={magnifierRef}
                         className="absolute pointer-events-none z-50 rounded-full shadow-2xl border-2 border-white"
                         style={{
-                            left: (magnifierPos.x / (imageRef.current?.width || 1)) * 100 + '%',
-                            top: (magnifierPos.y / (imageRef.current?.height || 1)) * 100 + '%',
+                            left: (magnifierPos.x / (imgDimensions?.w || 1)) * 100 + '%',
+                            top: (magnifierPos.y / (imgDimensions?.h || 1)) * 100 + '%',
                             width: '150px',
                             height: '150px',
                             transform: 'translate(-50%, -50%)', // Center on cursor
