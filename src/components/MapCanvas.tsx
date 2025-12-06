@@ -31,8 +31,10 @@ export function MapCanvas({
         const img = imageRef.current;
         if (!canvas || !img || !img.complete) return;
 
-        canvas.width = img.width;
-        canvas.height = img.height;
+        // CRITICAL FIX: Set canvas resolution to NATURAL image size.
+        // We rely on CSS (width: 100%) to scale it up to match the zoomed image.
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
@@ -300,8 +302,8 @@ export function MapCanvas({
         const canvas = canvasRef.current;
         const img = imageRef.current;
         if (canvas && img) {
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
             setImgDimensions({ w: img.naturalWidth, h: img.naturalHeight });
         }
     };
