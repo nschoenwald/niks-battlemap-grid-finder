@@ -264,18 +264,28 @@ export function MapCanvas({
         <div
             ref={containerRef}
             className={`relative overflow-auto border border-neutral-700 bg-neutral-900 shadow-xl ${isMeasuring ? 'cursor-crosshair' : ''}`}
-            style={{ maxHeight: '80vh', maxWidth: '100%' }}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
+            onMouseDown={(e) => {
+                // Prevent browser drag behavior
+                e.preventDefault();
+                handleMouseDown(e);
+            }}
+            onMouseMove={(e) => {
+                e.preventDefault();
+                handleMouseMove(e);
+            }}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
+            // Add styles to prevent selection
+            style={{ maxHeight: '80vh', maxWidth: '100%', userSelect: 'none', WebkitUserSelect: 'none' }}
         >
             <div className="relative inline-block">
                 <img
                     ref={imageRef}
                     src={imageUrl}
                     alt="Battlemap"
-                    className="block max-w-none"
+                    className="block max-w-none select-none"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
                     onLoad={handleImageLoad}
                 />
                 <canvas
