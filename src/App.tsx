@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ImageUploader } from './components/ImageUploader';
 import { MapCanvas } from './components/MapCanvas';
 import { Controls } from './components/Controls';
+import { HelpModal } from './components/HelpModal';
 
 import { processImage } from './utils/imageProcessing';
 import { detectGrid } from './utils/gridDetection';
@@ -10,6 +11,8 @@ import { detectGrid } from './utils/gridDetection';
 function App() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  const [showHelp, setShowHelp] = useState(false);
 
   // Grid State
   const [gridSize, setGridSize] = useState(50);
@@ -79,6 +82,13 @@ function App() {
     setOffsetY(0);
   };
 
+  // Auto-Detect on Load
+  useEffect(() => {
+    if (imageUrl) {
+      handleAutoDetect();
+    }
+  }, [imageUrl]);
+
   const handleAutoDetect = async () => {
     if (!imageUrl) return;
     setIsProcessing(true);
@@ -93,12 +103,16 @@ function App() {
         setGridSize(result.gridSize);
         setOffsetX(result.offsetX % result.gridSize);
         setOffsetY(result.offsetY % result.gridSize);
+        // Also set export grid size match detected size? Or keep 100 default?
+        // Let's keep export default at 100 for now, but maybe nice to set it.
+        // setExportGridSize(100); 
       } else {
-        alert("Could not detect a clear grid.");
+        // Silent failure on auto-detect? Or toast?
+        // Let's console log for now to depend less on intrusive alerts on load
+        console.warn("Could not automatically detect grid.");
       }
     } catch (e) {
       console.error(e);
-      alert("Detection failed.");
     } finally {
       setIsProcessing(false);
     }
@@ -144,23 +158,16 @@ function App() {
     setMeasureEnd(null);
 
     const width = Math.abs(end.x - start.x);
-    // const height = Math.abs(end.y - start.y); // We primarily trust width for 'squares wide'
+    // const height = Math.abs(end.y - start.y);
 
     if (width < 10) return; // Ignore small drags
 
-    const squares = prompt("How many grid squares WIDE is this box?");
-    if (!squares) return;
-
-    const count = parseFloat(squares);
-    if (isNaN(count) || count <= 0) {
-      alert("Invalid number entered.");
-      return;
-    }
+    // Fixed 3x3 Logic
+    const count = 3;
 
     const newGridSize = width / count;
 
     // Calculate Offset
-    // The top-left of the box (minX, minY) should align with a grid line.
     const left = Math.min(start.x, end.x);
     const top = Math.min(start.y, end.y);
 
@@ -231,8 +238,11 @@ function App() {
           setIsGridVisible={setIsGridVisible}
           exportGridSize={exportGridSize}
           setExportGridSize={setExportGridSize}
+          onOpenHelp={() => setShowHelp(true)}
         />
       )}
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }

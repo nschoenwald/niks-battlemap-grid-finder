@@ -53,7 +53,7 @@ export function MapCanvas({
             ctx.stroke();
         }
 
-        // 2. Draw Measurement Box
+        // 2. Draw Measurement Box with 3x3 Grid
         if (isMeasuring && measureStart && measureEnd) {
             ctx.strokeStyle = '#00ff00'; // Green for measure
             ctx.lineWidth = 2;
@@ -65,9 +65,21 @@ export function MapCanvas({
 
             ctx.strokeRect(x, y, w, h);
 
-            // Optional: Draw diagonal or cross to indicate it's a selection?
-            // Or maybe a 3x3 grid preview if we assume default? 
-            // Let's just keep it as a clean box for now.
+            // Draw 3x3 internal lines
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            // Verticals
+            ctx.moveTo(x + w / 3, y);
+            ctx.lineTo(x + w / 3, y + h);
+            ctx.moveTo(x + (2 * w) / 3, y);
+            ctx.lineTo(x + (2 * w) / 3, y + h);
+            // Horizontals
+            ctx.moveTo(x, y + h / 3);
+            ctx.lineTo(x + w, y + h / 3);
+            ctx.moveTo(x, y + (2 * h) / 3);
+            ctx.lineTo(x + w, y + (2 * h) / 3);
+            ctx.stroke();
+
             ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
             ctx.fillRect(x, y, w, h);
         }

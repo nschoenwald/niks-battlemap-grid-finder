@@ -19,6 +19,7 @@ interface ControlsProps {
     setIsMeasuring: (measuring: boolean) => void;
     exportGridSize: number;
     setExportGridSize: (size: number) => void;
+    onOpenHelp: () => void;
 }
 
 export function Controls({
@@ -39,11 +40,21 @@ export function Controls({
     isMeasuring,
     setIsMeasuring,
     exportGridSize,
-    setExportGridSize
+    setExportGridSize,
+    onOpenHelp
 }: ControlsProps) {
     return (
         <div className="w-80 flex-shrink-0 bg-neutral-800 p-6 flex flex-col gap-6 border-l border-neutral-700 shadow-2xl z-10">
-            <h2 className="text-2xl font-bold text-white mb-2">Adjust Grid</h2>
+            <div className="flex items-center justify-between mb-2">
+                <h2 className="text-2xl font-bold text-white">Adjust Grid</h2>
+                <button
+                    onClick={onOpenHelp}
+                    className="w-8 h-8 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
+                    title="How to use"
+                >
+                    ?
+                </button>
+            </div>
 
             <div className="flex flex-col gap-2">
                 <label className="text-sm text-neutral-400">Grid Size (px)</label>
