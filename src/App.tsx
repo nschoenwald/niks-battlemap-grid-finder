@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ImageUploader } from './components/ImageUploader';
 import { MapCanvas } from './components/MapCanvas';
 import { Controls } from './components/Controls';
@@ -16,7 +16,52 @@ function App() {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
 
+  // Visual Aids State
+  const [gridColor, setGridColor] = useState('#ff0000');
+  const [isGridVisible, setIsGridVisible] = useState(true);
+
+  // Measure Tool State
+  const [isMeasuring, setIsMeasuring] = useState(false);
+  const [measureStart, setMeasureStart] = useState<{ x: number, y: number } | null>(null);
+  const [measureEnd, setMeasureEnd] = useState<{ x: number, y: number } | null>(null);
+
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Keyboard Nudging
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!imageUrl) return;
+      // Ignore if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const shift = e.shiftKey ? 10 : 1;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          setOffsetX(prev => prev - shift);
+          break;
+        case 'ArrowRight':
+          setOffsetX(prev => prev + shift);
+          break;
+        case 'ArrowUp':
+          setOffsetY(prev => prev - shift);
+          break;
+        case 'ArrowDown':
+          setOffsetY(prev => prev + shift);
+          break;
+        case '=':
+        case '+':
+          setGridSize(prev => prev + 1);
+          break;
+        case '-':
+          setGridSize(prev => Math.max(10, prev - 1));
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [imageUrl]);
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
@@ -92,6 +137,37 @@ function App() {
     }
   };
 
+  const handleMeasureComplete = (start: { x: number, y: number }, end: { x: number, y: number }) => {
+    setIsMeasuring(false);
+    setMeasureStart(null);
+    setMeasureEnd(null);
+
+    const width = Math.abs(end.x - start.x);
+    // const height = Math.abs(end.y - start.y); // We primarily trust width for 'squares wide'
+
+    if (width < 10) return; // Ignore small drags
+
+    const squares = prompt("How many grid squares WIDE is this box?");
+    if (!squares) return;
+
+    const count = parseFloat(squares);
+    if (isNaN(count) || count <= 0) {
+      alert("Invalid number entered.");
+      return;
+    }
+
+    const newGridSize = width / count;
+
+    // Calculate Offset
+    // The top-left of the box (minX, minY) should align with a grid line.
+    const left = Math.min(start.x, end.x);
+    const top = Math.min(start.y, end.y);
+
+    setGridSize(Math.round(newGridSize));
+    setOffsetX(Math.round(left % newGridSize));
+    setOffsetY(Math.round(top % newGridSize));
+  };
+
   return (
     <div className="flex h-screen bg-neutral-900 text-neutral-100 overflow-hidden font-sans">
 
@@ -120,6 +196,14 @@ function App() {
               gridSize={gridSize}
               offsetX={offsetX}
               offsetY={offsetY}
+              gridColor={gridColor}
+              isGridVisible={isGridVisible}
+              isMeasuring={isMeasuring}
+              measureStart={measureStart}
+              setMeasureStart={setMeasureStart}
+              measureEnd={measureEnd}
+              setMeasureEnd={setMeasureEnd}
+              onMeasureComplete={handleMeasureComplete}
             />
           )}
         </main>
@@ -138,6 +222,12 @@ function App() {
           onExport={handleExport}
           isProcessing={isProcessing}
           onAutoDetect={handleAutoDetect}
+          isMeasuring={isMeasuring}
+          setIsMeasuring={setIsMeasuring}
+          gridColor={gridColor}
+          setGridColor={setGridColor}
+          isGridVisible={isGridVisible}
+          setIsGridVisible={setIsGridVisible}
         />
       )}
     </div>

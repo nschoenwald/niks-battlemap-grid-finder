@@ -11,6 +11,12 @@ interface ControlsProps {
     onExport: () => void;
     isProcessing: boolean;
     onAutoDetect: () => void;
+    gridColor: string;
+    setGridColor: (color: string) => void;
+    isGridVisible: boolean;
+    setIsGridVisible: (visible: boolean) => void;
+    isMeasuring: boolean;
+    setIsMeasuring: (measuring: boolean) => void;
 }
 
 export function Controls({
@@ -23,7 +29,13 @@ export function Controls({
     onReset,
     onExport,
     isProcessing,
-    onAutoDetect
+    onAutoDetect,
+    gridColor,
+    setGridColor,
+    isGridVisible,
+    setIsGridVisible,
+    isMeasuring,
+    setIsMeasuring
 }: ControlsProps) {
     return (
         <div className="w-80 flex-shrink-0 bg-neutral-800 p-6 flex flex-col gap-6 border-l border-neutral-700 shadow-2xl z-10">
@@ -54,6 +66,38 @@ export function Controls({
                 >
                     ✨ Auto-Detect
                 </button>
+                <button
+                    onClick={() => setIsMeasuring(!isMeasuring)}
+                    className={`text-xs self-end mt-1 focus:outline-none ${isMeasuring ? 'text-green-400 font-bold' : 'text-indigo-400 hover:text-indigo-300'}`}
+                    disabled={isProcessing}
+                >
+                    {isMeasuring ? 'Cancel Measure' : '📏 Measure Tool'}
+                </button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <label className="text-sm text-neutral-400">Visual Aids</label>
+                <div className="flex gap-4 items-center">
+                    <label className="flex items-center gap-2 text-sm text-neutral-300 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={isGridVisible}
+                            onChange={(e) => setIsGridVisible(e.target.checked)}
+                            className="rounded bg-neutral-700 border-neutral-600 text-indigo-500 focus:ring-indigo-500"
+                        />
+                        Show Grid
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="color"
+                            value={gridColor}
+                            onChange={(e) => setGridColor(e.target.value)}
+                            className="h-8 w-8 rounded cursor-pointer bg-transparent border-none"
+                            title="Grid Color"
+                        />
+                    </div>
+                </div>
             </div>
 
             <div className="flex flex-col gap-2">
