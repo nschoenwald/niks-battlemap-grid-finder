@@ -26,7 +26,7 @@ export function Controls({
     onAutoDetect
 }: ControlsProps) {
     return (
-        <div className="w-80 bg-neutral-800 p-6 flex flex-col gap-6 border-l border-neutral-700 shadow-2xl z-10">
+        <div className="w-80 flex-shrink-0 bg-neutral-800 p-6 flex flex-col gap-6 border-l border-neutral-700 shadow-2xl z-10">
             <h2 className="text-2xl font-bold text-white mb-2">Adjust Grid</h2>
 
             <div className="flex flex-col gap-2">

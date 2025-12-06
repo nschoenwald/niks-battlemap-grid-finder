@@ -96,7 +96,7 @@ function App() {
     <div className="flex h-screen bg-neutral-900 text-neutral-100 overflow-hidden font-sans">
 
       {/* Main Canvas Area */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col relative min-w-0">
         <header className="h-14 border-b border-neutral-800 flex items-center px-6 bg-neutral-900 z-10">
           <h1 className="text-lg font-bold tracking-brand">Battlemap Resizer</h1>
           <div className="ml-auto">
