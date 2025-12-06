@@ -10,14 +10,12 @@ interface ControlsProps {
     onReset: () => void;
     onExport: () => void;
     isProcessing: boolean;
-    onAutoDetect: () => void;
+    onAutoDetect: (method: 'projection' | 'autocorrelation') => void;
     gridColor: string;
     setGridColor: (color: string) => void;
     isGridVisible: boolean;
     setIsGridVisible: (v: boolean) => void;
-    // Multi-Detect
-    detectionMethod: 'auto' | 'projection' | 'autocorrelation';
-    setDetectionMethod: (m: 'auto' | 'projection' | 'autocorrelation') => void;
+
     isMeasuring: boolean;
     setIsMeasuring: (measuring: boolean) => void;
     exportGridSize: number;
@@ -40,8 +38,7 @@ export function Controls({
     setGridColor,
     isGridVisible,
     setIsGridVisible,
-    detectionMethod,
-    setDetectionMethod,
+
     isMeasuring,
     setIsMeasuring,
     exportGridSize,
@@ -58,6 +55,46 @@ export function Controls({
                     title="How to use"
                 >
                     ?
+                </button>
+            </div>
+
+            {/* Tools Section (Moved to Top) */}
+            <div className="flex flex-col gap-3 p-4 bg-neutral-900 rounded-lg border border-neutral-700">
+                <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Calibration Tools</h3>
+
+                <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-neutral-400 uppercase">Detection Mode</label>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => onAutoDetect('projection')}
+                            disabled={isProcessing}
+                            className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded flex flex-col items-center justify-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-indigo-500/20"
+                            title="Best for clean, high-contrast maps"
+                        >
+                            <span className="text-lg">⚡</span>
+                            <span className="text-xs">Fast Detect</span>
+                        </button>
+
+                        <button
+                            onClick={() => onAutoDetect('autocorrelation')}
+                            disabled={isProcessing}
+                            className="flex-1 py-3 bg-violet-700 hover:bg-violet-600 text-white font-bold rounded flex flex-col items-center justify-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-violet-500/20"
+                            title="Best for tiles, textures, or broken lines"
+                        >
+                            <span className="text-lg">🧠</span>
+                            <span className="text-xs">Robust Detect</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    onClick={() => setIsMeasuring(!isMeasuring)}
+                    className={`w-full py-3 font-bold rounded flex items-center justify-center gap-2 transition-all shadow-lg ${isMeasuring
+                        ? 'bg-green-500 text-white ring-2 ring-green-400 ring-offset-2 ring-offset-neutral-900'
+                        : 'bg-neutral-700 hover:bg-neutral-600 text-white hover:shadow-neutral-500/20'
+                        }`}
+                >
+                    <span>📏</span> {isMeasuring ? 'Measuring... (Click & Drag)' : '3x3 Grid Matcher'}
                 </button>
             </div>
 
@@ -79,20 +116,7 @@ export function Controls({
                         className="w-16 bg-neutral-700 border border-neutral-600 rounded px-2 py-1 text-white text-right"
                     />
                 </div>
-                <button
-                    onClick={onAutoDetect}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 self-end mt-1 focus:outline-none"
-                    disabled={isProcessing}
-                >
-                    ✨ Auto-Detect
-                </button>
-                <button
-                    onClick={() => setIsMeasuring(!isMeasuring)}
-                    className={`text-xs self-end mt-1 focus:outline-none ${isMeasuring ? 'text-green-400 font-bold' : 'text-indigo-400 hover:text-indigo-300'}`}
-                    disabled={isProcessing}
-                >
-                    {isMeasuring ? 'Cancel Measure' : '📏 Measure Tool'}
-                </button>
+
             </div>
 
             <div className="flex flex-col gap-2">
@@ -170,45 +194,7 @@ export function Controls({
                         className="bg-neutral-700 border border-neutral-600 rounded px-2 py-1 text-white"
                     />
                 </div>
-                {/* Tools Section */}
-                <div className="flex flex-col gap-3 p-4 bg-neutral-900 rounded-lg border border-neutral-700">
-                    <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Calibration Tools</h3>
 
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-neutral-400 uppercase">Detection Mode</label>
-                        <select
-                            value={detectionMethod}
-                            onChange={(e) => setDetectionMethod(e.target.value as any)}
-                            className="w-full bg-neutral-800 border-neutral-700 text-neutral-200 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="auto">Auto (Best Guess)</option>
-                            <option value="projection">Scan A: Edge Projection (Fast)</option>
-                            <option value="autocorrelation">Scan B: Texture Match (Robust)</option>
-                        </select>
-
-                        <button
-                            onClick={onAutoDetect}
-                            disabled={isProcessing}
-                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-indigo-500/20"
-                        >
-                            {isProcessing ? 'Processing... (May take a moment)' : (
-                                <>
-                                    <span>✨</span> Run Auto-Detect
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    <button
-                        onClick={() => setIsMeasuring(!isMeasuring)}
-                        className={`w-full py-3 font-bold rounded flex items-center justify-center gap-2 transition-all shadow-lg ${isMeasuring
-                            ? 'bg-green-500 text-white ring-2 ring-green-400 ring-offset-2 ring-offset-neutral-900'
-                            : 'bg-neutral-700 hover:bg-neutral-600 text-white hover:shadow-neutral-500/20'
-                            }`}
-                    >
-                        <span>📏</span> {isMeasuring ? 'Measuring... (Click & Drag)' : '3x3 Grid Matcher'}
-                    </button>
-                </div>
 
                 <button
                     onClick={onExport}

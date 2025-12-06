@@ -112,8 +112,7 @@ function App() {
     setOffsetY(0);
   };
 
-  // Detection State
-  const [detectionMethod, setDetectionMethod] = useState<'auto' | 'projection' | 'autocorrelation'>('auto');
+
 
   // Auto-Detect on Load
   useEffect(() => {
@@ -122,7 +121,7 @@ function App() {
     }
   }, [imageUrl]);
 
-  const handleAutoDetect = async () => {
+  const handleAutoDetect = async (method: 'auto' | 'projection' | 'autocorrelation' = 'auto') => {
     if (!imageUrl) return;
     setIsProcessing(true);
 
@@ -131,13 +130,10 @@ function App() {
       img.src = imageUrl;
       await new Promise((resolve) => { img.onload = resolve; });
 
-      // Artificial delay to let UI render loading state if it's too fast? No.
-      // But autocorrelation might freeze UI if not in worker.
-      // For now we just run it async (it's sync blocking though).
-      // A 0ms timeout allows the react render cycle to update "Processing" state.
+      // Artificial delay to let UI render
       await new Promise(r => setTimeout(r, 50));
 
-      const result = await detectGrid(img, detectionMethod);
+      const result = await detectGrid(img, method);
       if (result && result.gridSize > 0) {
         setGridSize(result.gridSize);
         setOffsetX(result.offsetX % result.gridSize);
@@ -273,8 +269,6 @@ function App() {
           setIsGridVisible={setIsGridVisible}
           exportGridSize={exportGridSize}
           setExportGridSize={setExportGridSize}
-          detectionMethod={detectionMethod}
-          setDetectionMethod={setDetectionMethod}
           onOpenHelp={() => setShowHelp(true)}
         />
 
