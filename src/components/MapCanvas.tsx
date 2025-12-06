@@ -196,6 +196,49 @@ export function MapCanvas({
             ctx.stroke();
         }
 
+        // Draw Measurement Box on Magnifier
+        if (isMeasuring && measureStart && measureEnd) {
+            const mx1 = Math.min(measureStart.x, measureEnd.x);
+            const my1 = Math.min(measureStart.y, measureEnd.y);
+            const mx2 = Math.max(measureStart.x, measureEnd.x);
+            const my2 = Math.max(measureStart.y, measureEnd.y);
+
+            // Transform to magnifier space
+            // drawX = (worldX - sX) * zoom
+            const drawX = (mx1 - sX) * zoom;
+            const drawY = (my1 - sY) * zoom;
+            const drawW = (mx2 - mx1) * zoom;
+            const drawH = (my2 - my1) * zoom;
+
+            // 1. Fill
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
+            ctx.fillRect(drawX, drawY, drawW, drawH);
+
+            // 2. Internal 3x3 Grid
+            ctx.strokeStyle = '#FFFF00'; // Yellow
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            if (drawW > 0 && drawH > 0) {
+                // Verticals
+                ctx.moveTo(drawX + drawW / 3, drawY);
+                ctx.lineTo(drawX + drawW / 3, drawY + drawH);
+                ctx.moveTo(drawX + (2 * drawW) / 3, drawY);
+                ctx.lineTo(drawX + (2 * drawW) / 3, drawY + drawH);
+                // Horizontals
+                ctx.moveTo(drawX, drawY + drawH / 3);
+                ctx.lineTo(drawX + drawW, drawY + drawH / 3);
+                ctx.moveTo(drawX, drawY + (2 * drawH) / 3);
+                ctx.lineTo(drawX + drawW, drawY + (2 * drawH) / 3);
+                ctx.stroke();
+            }
+
+            // 3. Border
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(drawX, drawY, drawW, drawH);
+        }
+
         // Draw Crosshair in center
         ctx.strokeStyle = '#00ff00';
         ctx.lineWidth = 1;

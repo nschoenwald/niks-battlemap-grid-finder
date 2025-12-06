@@ -167,8 +167,9 @@ function App() {
       });
 
       // Trigger Download
+      const originalName = imageFile?.name.split('.')[0] || 'map';
       const link = document.createElement('a');
-      link.download = `resized_map_${Date.now()}.webp`;
+      link.download = `${originalName}-resized-${exportGridSize}px.webp`;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();

@@ -165,6 +165,32 @@ export function Controls({
                         className="bg-neutral-700 border border-neutral-600 rounded px-2 py-1 text-white"
                     />
                 </div>
+                {/* Tools Section */}
+                <div className="flex flex-col gap-3 p-4 bg-neutral-900 rounded-lg border border-neutral-700">
+                    <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Calibration Tools</h3>
+
+                    <button
+                        onClick={onAutoDetect}
+                        disabled={isProcessing}
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-indigo-500/20"
+                    >
+                        {isProcessing ? 'Processing...' : (
+                            <>
+                                <span>✨</span> Auto-Detect Grid
+                            </>
+                        )}
+                    </button>
+
+                    <button
+                        onClick={() => setIsMeasuring(!isMeasuring)}
+                        className={`w-full py-3 font-bold rounded flex items-center justify-center gap-2 transition-all shadow-lg ${isMeasuring
+                            ? 'bg-green-500 text-white ring-2 ring-green-400 ring-offset-2 ring-offset-neutral-900'
+                            : 'bg-neutral-700 hover:bg-neutral-600 text-white hover:shadow-neutral-500/20'
+                            }`}
+                    >
+                        <span>📏</span> {isMeasuring ? 'Measuring... (Click & Drag)' : '3x3 Grid Matcher'}
+                    </button>
+                </div>
 
                 <button
                     onClick={onExport}
