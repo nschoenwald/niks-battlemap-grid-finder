@@ -335,16 +335,16 @@ export function MapCanvas({
                     ref={imageRef}
                     src={imageUrl}
                     alt="Battlemap"
-                    className="block max-w-none select-none origin-top-left"
-                    style={{ transform: `scale(${scale})` }}
+                    className="block max-w-none select-none"
+                    style={{ width: '100%', height: '100%' }}
                     draggable={false}
                     onDragStart={(e) => e.preventDefault()}
                     onLoad={handleImageLoad}
                 />
                 <canvas
                     ref={canvasRef}
-                    className="absolute inset-0 pointer-events-none origin-top-left"
-                    style={{ width: '100%', height: '100%', transform: `scale(${scale})` }}
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ width: '100%', height: '100%' }}
                 />
                 {/* Magnifier Canvas */}
                 {magnifierPos && (
