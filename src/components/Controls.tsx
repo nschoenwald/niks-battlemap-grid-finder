@@ -14,7 +14,10 @@ interface ControlsProps {
     gridColor: string;
     setGridColor: (color: string) => void;
     isGridVisible: boolean;
-    setIsGridVisible: (visible: boolean) => void;
+    setIsGridVisible: (v: boolean) => void;
+    // Multi-Detect
+    detectionMethod: 'auto' | 'projection' | 'autocorrelation';
+    setDetectionMethod: (m: 'auto' | 'projection' | 'autocorrelation') => void;
     isMeasuring: boolean;
     setIsMeasuring: (measuring: boolean) => void;
     exportGridSize: number;
@@ -37,6 +40,8 @@ export function Controls({
     setGridColor,
     isGridVisible,
     setIsGridVisible,
+    detectionMethod,
+    setDetectionMethod,
     isMeasuring,
     setIsMeasuring,
     exportGridSize,
@@ -169,17 +174,30 @@ export function Controls({
                 <div className="flex flex-col gap-3 p-4 bg-neutral-900 rounded-lg border border-neutral-700">
                     <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Calibration Tools</h3>
 
-                    <button
-                        onClick={onAutoDetect}
-                        disabled={isProcessing}
-                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-indigo-500/20"
-                    >
-                        {isProcessing ? 'Processing...' : (
-                            <>
-                                <span>✨</span> Auto-Detect Grid
-                            </>
-                        )}
-                    </button>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-neutral-400 uppercase">Detection Mode</label>
+                        <select
+                            value={detectionMethod}
+                            onChange={(e) => setDetectionMethod(e.target.value as any)}
+                            className="w-full bg-neutral-800 border-neutral-700 text-neutral-200 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="auto">Auto (Best Guess)</option>
+                            <option value="projection">Scan A: Edge Projection (Fast)</option>
+                            <option value="autocorrelation">Scan B: Texture Match (Robust)</option>
+                        </select>
+
+                        <button
+                            onClick={onAutoDetect}
+                            disabled={isProcessing}
+                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-indigo-500/20"
+                        >
+                            {isProcessing ? 'Processing... (May take a moment)' : (
+                                <>
+                                    <span>✨</span> Run Auto-Detect
+                                </>
+                            )}
+                        </button>
+                    </div>
 
                     <button
                         onClick={() => setIsMeasuring(!isMeasuring)}

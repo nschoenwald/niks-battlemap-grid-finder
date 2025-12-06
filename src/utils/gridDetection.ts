@@ -5,7 +5,9 @@ export interface GridDetectionResult {
     confidence: number;
 }
 
-export async function detectGrid(image: HTMLImageElement): Promise<GridDetectionResult | null> {
+export type DetectionMethod = 'auto' | 'projection' | 'autocorrelation';
+
+export async function detectGrid(image: HTMLImageElement, method: DetectionMethod = 'auto'): Promise<GridDetectionResult | null> {
     // 1. Create a canvas for processing (downsampled)
     const MAX_DIM = 2000;
     let width = image.naturalWidth;
@@ -24,52 +26,70 @@ export async function detectGrid(image: HTMLImageElement): Promise<GridDetection
     if (!ctx) return null;
 
     ctx.drawImage(image, 0, 0, width, height);
-
     const imageData = ctx.getImageData(0, 0, width, height);
+
+    // Scale back up to original image dimensions
+    const scaleFactor = image.naturalWidth / width;
+
+    let result: GridDetectionResult | null = null;
+
+    if (method === 'auto') {
+        const pResult = detectGridProjection(imageData, width, height);
+        const aResult = detectGridAutocorrelation(imageData, width, height);
+
+        // Simple competition: higher confidence wins
+        // Bias slightly towards projection as it's usually more precise on clean maps
+        if (pResult && aResult) {
+            console.log(`Projection Confidence: ${pResult.confidence}, AutoCorr Confidence: ${aResult.confidence}`);
+            result = pResult.confidence >= aResult.confidence ? pResult : aResult;
+        } else {
+            result = pResult || aResult;
+        }
+    } else if (method === 'projection') {
+        result = detectGridProjection(imageData, width, height);
+    } else if (method === 'autocorrelation') {
+        result = detectGridAutocorrelation(imageData, width, height);
+    }
+
+    if (!result) return null;
+
+    return {
+        ...result,
+        gridSize: Math.round(result.gridSize * scaleFactor),
+        offsetX: Math.round(result.offsetX * scaleFactor),
+        offsetY: Math.round(result.offsetY * scaleFactor),
+    };
+}
+
+function detectGridProjection(imageData: ImageData, width: number, height: number): GridDetectionResult | null {
     const data = imageData.data;
-
-    // 2. Grayscale & Edge Detection (Simple difference or Sobel)
-    // We'll compute separate vertical and horizontal energy profiles.
-
     const colSums = new Float32Array(width).fill(0);
     const rowSums = new Float32Array(height).fill(0);
 
-    // We iterate pixels and compute "edginess".
-    // A vertical line has high horizontal contrast.
-    // A horizontal line has high vertical contrast.
-
-    // Stride = 4 (RGBA)
+    // Edge Detection Loop
     for (let y = 1; y < height - 1; y++) {
         for (let x = 1; x < width - 1; x++) {
-
-
-            // Grayscale value approx - unused
-            // const val = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-
-            // Vertical Edge (detects vertical lines): |Left - Right|
+            // Vertical Edge: |Left - Right|
             const leftIdx = (y * width + (x - 1)) * 4;
             const rightIdx = (y * width + (x + 1)) * 4;
-            const valLeft = (data[leftIdx] + data[leftIdx + 1] + data[leftIdx + 2]) / 3;
-            const valRight = (data[rightIdx] + data[rightIdx + 1] + data[rightIdx + 2]) / 3;
+            const valLeft = (data[leftIdx] + data[leftIdx + 1] + data[leftIdx + 2]); // Sum (faster than avg)
+            const valRight = (data[rightIdx] + data[rightIdx + 1] + data[rightIdx + 2]);
             const vEdge = Math.abs(valLeft - valRight);
             colSums[x] += vEdge;
 
-            // Horizontal Edge (detects horizontal lines): |Top - Bottom|
+            // Horizontal Edge: |Top - Bottom|
             const topIdx = ((y - 1) * width + x) * 4;
             const bottomIdx = ((y + 1) * width + x) * 4;
-            const valTop = (data[topIdx] + data[topIdx + 1] + data[topIdx + 2]) / 3;
-            const valBottom = (data[bottomIdx] + data[bottomIdx + 1] + data[bottomIdx + 2]) / 3;
+            const valTop = (data[topIdx] + data[topIdx + 1] + data[topIdx + 2]);
+            const valBottom = (data[bottomIdx] + data[bottomIdx + 1] + data[bottomIdx + 2]);
             const hEdge = Math.abs(valTop - valBottom);
             rowSums[y] += hEdge;
         }
     }
 
-    // 3. Peak Finding & Autocorrelation
-    // We look for regular intervals in the projection sums.
-
+    // Peak Finding Helper
     const findDominantPeriod = (sums: Float32Array): { period: number, offset: number, confidence: number } => {
-        // Smoothen sums
-        // Simple moving average
+        // Smoothen
         const smoothed = new Float32Array(sums.length);
         const window = 3;
         for (let i = window; i < sums.length - window; i++) {
@@ -78,37 +98,32 @@ export async function detectGrid(image: HTMLImageElement): Promise<GridDetection
             smoothed[i] = s / (2 * window + 1);
         }
 
-        // Find local maxima (peaks)
         const peaks: number[] = [];
-        const threshold = smoothed.reduce((a, b) => a + b, 0) / smoothed.length * 1.5; // > 1.5x average
+        const avg = smoothed.reduce((a, b) => a + b, 0) / smoothed.length;
+        const threshold = avg * 1.5;
 
-        for (let i = 1; i < smoothed.length - 1; i++) {
-            if (smoothed[i] > threshold && smoothed[i] > smoothed[i - 1] && smoothed[i] > smoothed[i + 1]) {
+        for (let i = 2; i < smoothed.length - 2; i++) {
+            if (smoothed[i] > threshold &&
+                smoothed[i] > smoothed[i - 1] &&
+                smoothed[i] > smoothed[i + 1]) {
                 peaks.push(i);
             }
         }
 
         if (peaks.length < 5) return { period: 0, offset: 0, confidence: 0 };
 
-        // Calculate distances between adjacent peaks
         const diffs: number[] = [];
         for (let i = 0; i < peaks.length - 1; i++) {
             diffs.push(peaks[i + 1] - peaks[i]);
         }
 
-        // Find the mode (most frequent difference) with some tolerance
         const counts: { [key: number]: number } = {};
         let maxCount = 0;
         let mode = 0;
 
         diffs.forEach(diff => {
-            // Round to nearest multiple of 5 to group similar values roughly
-            // Ideally we do K-means or clustering, but histogram bucketing is faster.
-            // Let's bucket by 2 pixels.
             const bucket = Math.round(diff);
-            // We only care about grids likely > 20px and < 300px (scaled)
-            if (bucket < 10 || bucket > 500) return;
-
+            if (bucket < 15 || bucket > 400) return; // Adjusted limits
             counts[bucket] = (counts[bucket] || 0) + 1;
             if (counts[bucket] > maxCount) {
                 maxCount = counts[bucket];
@@ -116,11 +131,11 @@ export async function detectGrid(image: HTMLImageElement): Promise<GridDetection
             }
         });
 
-        // Refine mode: average all diffs close to the mode
+        // Calculate weighted average around mode
         let total = 0;
         let count = 0;
         diffs.forEach(diff => {
-            if (Math.abs(diff - mode) < 2) {
+            if (Math.abs(diff - mode) <= 2) {
                 total += diff;
                 count++;
             }
@@ -128,18 +143,20 @@ export async function detectGrid(image: HTMLImageElement): Promise<GridDetection
 
         const finalPeriod = count > 0 ? total / count : 0;
 
-        // Find offset: first peak that fits the pattern? 
-        // Or just the first strong peak modulo period?
-        // Let's try to align with the sequence of peaks.
-        // If grid starts at `offset`, peaks should be at `offset + k * period`.
-        // We want to minimize error.
-
-        // Simple heuristic: The first valid peak is likely an intersection.
-        const firstPeak = peaks[0];
+        // Find Offset: first peak consistent with period
+        let bestOffset = 0;
+        if (finalPeriod > 0) {
+            // Check first few peaks
+            for (const p of peaks) {
+                // heuristic: usually the first valid peak is a grid line
+                bestOffset = p;
+                break;
+            }
+        }
 
         return {
             period: finalPeriod,
-            offset: firstPeak,
+            offset: bestOffset,
             confidence: maxCount / diffs.length
         };
     };
@@ -147,27 +164,143 @@ export async function detectGrid(image: HTMLImageElement): Promise<GridDetection
     const xRes = findDominantPeriod(colSums);
     const yRes = findDominantPeriod(rowSums);
 
-    // Combine results
-    // If one confidence is bad, maybe use the other?
-    // We assume square grids -> Average period if similar.
-
     let size = 0;
-    if (Math.abs(xRes.period - yRes.period) < 2) {
+    if (xRes.period > 0 && yRes.period > 0 && Math.abs(xRes.period - yRes.period) < 5) {
         size = (xRes.period + yRes.period) / 2;
     } else {
-        // Pick the one with higher confidence
         size = xRes.confidence > yRes.confidence ? xRes.period : yRes.period;
     }
-
-    // Scale back up to original image dimensions
-    const scaleFactor = image.naturalWidth / width;
 
     if (size === 0) return null;
 
     return {
-        gridSize: Math.round(size * scaleFactor),
-        offsetX: Math.round(xRes.offset * scaleFactor),
-        offsetY: Math.round(yRes.offset * scaleFactor),
+        gridSize: size,
+        offsetX: xRes.offset,
+        offsetY: yRes.offset,
         confidence: (xRes.confidence + yRes.confidence) / 2
+    };
+}
+
+// 2. Autocorrelation Implementation
+function detectGridAutocorrelation(imageData: ImageData, width: number, height: number): GridDetectionResult | null {
+    // We will use 1D autocorrelation on row/col sums of "energy"
+    // However, basic pixel sums might be influenced by image content luminosity.
+    // Better to use Edge Energy sums (calculated above but re-doing for isolation).
+
+    // Compute Edge Energy Sums (Simplified)
+    const data = imageData.data;
+    const colEnergy = new Float32Array(width).fill(0);
+    const rowEnergy = new Float32Array(height).fill(0);
+
+    for (let y = 0; y < height; y += 2) { // Skip lines for speed
+        for (let x = 0; x < width; x += 2) {
+            const idx = (y * width + x) * 4;
+            // Simple Laplacian-ish or Gradient magnitude
+            // Try horizontal diff
+            if (x < width - 1) {
+                const diff = Math.abs(data[idx] - data[idx + 4]) +
+                    Math.abs(data[idx + 1] - data[idx + 5]) +
+                    Math.abs(data[idx + 2] - data[idx + 6]);
+                colEnergy[x] += diff; // Vertical edges sum into columns
+            }
+            // Vertical diff
+            if (y < height - 1) {
+                const diff = Math.abs(data[idx] - data[idx + width * 4]) +
+                    Math.abs(data[idx + 1] - data[idx + width * 4 + 1]) +
+                    Math.abs(data[idx + 2] - data[idx + width * 4 + 2]);
+                rowEnergy[y] += diff; // Horizontal edges sum into rows
+            }
+        }
+    }
+
+    const autocorrelate = (signal: Float32Array): { period: number, confidence: number, offset: number } => {
+        const n = signal.length;
+        // Normalize signal (subtract mean)
+        let mean = 0;
+        for (let i = 0; i < n; i++) mean += signal[i];
+        mean /= n;
+
+        const normSignal = new Float32Array(n);
+        for (let i = 0; i < n; i++) normSignal[i] = signal[i] - mean;
+
+        // Compute Autocorrelation for lags 15..400
+        let maxCorr = -Infinity;
+        let bestLag = 0;
+
+
+        // Optimization: don't compute full correlation, just check candidate lags?
+        // No, we need to find the peak.
+        const minLag = 20;
+        const maxLag = 300;
+
+        for (let lag = minLag; lag < maxLag; lag++) {
+            let sum = 0;
+            // Only sum overlapping parts
+            for (let i = 0; i < n - lag; i += 2) { // Skip step for speed
+                sum += normSignal[i] * normSignal[i + lag];
+            }
+            // Normalize by number of terms to be fair to larger lags?
+            // Actually standard autocorrelation definition:
+            // r_k = sum((x_i - mu)(x_{i+k} - mu)) / sum((x_i - mu)^2)
+            // But raw product sum is okay if we care about magnitude of match
+
+            if (sum > maxCorr) {
+                maxCorr = sum;
+                bestLag = lag;
+            }
+        }
+
+        // Offset Finding: Maximize cross-correlation with a periodic impulse train?
+        // Or simply find the first strong peak in the original signal now that we know the period.
+        let bestOffset = 0;
+        let maxOffsetEnergy = -1;
+
+        if (bestLag > 0) {
+            // Check offset within first period
+            for (let o = 0; o < bestLag; o++) {
+                // Sum energy at o, o+period, o+2*period...
+                let energy = 0;
+                let k = 0;
+                while (o + k * bestLag < n) {
+                    energy += signal[o + k * bestLag];
+                    k++;
+                }
+                if (energy > maxOffsetEnergy) {
+                    maxOffsetEnergy = energy;
+                    bestOffset = o;
+                }
+            }
+        }
+
+        // Confidence heuristic
+        return {
+            period: bestLag,
+            confidence: maxCorr, // Raw score, not normalized 0-1 but useful for comparison
+            offset: bestOffset
+        };
+    };
+
+    const xRes = autocorrelate(colEnergy);
+    const yRes = autocorrelate(rowEnergy);
+
+    // Normalize confidence for comparison with projection method (roughly 0-1)
+    // This is hard without real normalization.
+    // Let's bias slightly lower as fallback.
+
+
+    let size = 0;
+    if (Math.abs(xRes.period - yRes.period) < 5) {
+        size = (xRes.period + yRes.period) / 2;
+    } else {
+        size = xRes.confidence > yRes.confidence ? xRes.period : yRes.period;
+    }
+
+    if (size === 0) return null;
+
+    return {
+        gridSize: size,
+        offsetX: xRes.offset,
+        offsetY: yRes.offset,
+        confidence: 0.8 // Dummy confidence for now, hard to calibrate against projection
     };
 }

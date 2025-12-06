@@ -112,6 +112,9 @@ function App() {
     setOffsetY(0);
   };
 
+  // Detection State
+  const [detectionMethod, setDetectionMethod] = useState<'auto' | 'projection' | 'autocorrelation'>('auto');
+
   // Auto-Detect on Load
   useEffect(() => {
     if (imageUrl) {
@@ -128,17 +131,18 @@ function App() {
       img.src = imageUrl;
       await new Promise((resolve) => { img.onload = resolve; });
 
-      const result = await detectGrid(img);
+      // Artificial delay to let UI render loading state if it's too fast? No.
+      // But autocorrelation might freeze UI if not in worker.
+      // For now we just run it async (it's sync blocking though).
+      // A 0ms timeout allows the react render cycle to update "Processing" state.
+      await new Promise(r => setTimeout(r, 50));
+
+      const result = await detectGrid(img, detectionMethod);
       if (result && result.gridSize > 0) {
         setGridSize(result.gridSize);
         setOffsetX(result.offsetX % result.gridSize);
         setOffsetY(result.offsetY % result.gridSize);
-        // Also set export grid size match detected size? Or keep 100 default?
-        // Let's keep export default at 100 for now, but maybe nice to set it.
-        // setExportGridSize(100); 
       } else {
-        // Silent failure on auto-detect? Or toast?
-        // Let's console log for now to depend less on intrusive alerts on load
         console.warn("Could not automatically detect grid.");
       }
     } catch (e) {
@@ -269,6 +273,8 @@ function App() {
           setIsGridVisible={setIsGridVisible}
           exportGridSize={exportGridSize}
           setExportGridSize={setExportGridSize}
+          detectionMethod={detectionMethod}
+          setDetectionMethod={setDetectionMethod}
           onOpenHelp={() => setShowHelp(true)}
         />
 
